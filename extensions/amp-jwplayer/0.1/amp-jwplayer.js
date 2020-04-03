@@ -45,6 +45,8 @@ const JWPLAYER_EVENTS = {
   'visible': VideoEvents.VISIBILITY,
   'adImpression': VideoEvents.AD_START,
   'adComplete': VideoEvents.AD_END,
+  'adPlay': VideoEvents.PLAYING,
+  'adPause': VideoEvents.PAUSE
 }
 
 const eventHandlers = {
@@ -420,6 +422,8 @@ class AmpJWPlayer extends AMP.BaseElement {
       'backfill': this.contentBackfill_ || undefined,
       'isAMP': true,
     });
+    const IS_DEV = true;
+    let baseUrl = `https://content.jwplatform.com/players/${cid}-${pid}.html`;
 
     const url = this.getSingleLineEmbed();
     const src = addParamsToUrl(url, queryParams);
@@ -497,6 +501,16 @@ class AmpJWPlayer extends AMP.BaseElement {
       return ogTitle || title || '';
     }
     return this.contentSearch_;
+  }
+
+  /**
+   * @param {boolean}
+   * @private
+   */
+  onToggleMute_(muted) {
+    const {element} = this;
+    this.muted_ = muted;
+    element.dispatchCustomEvent(mutedOrUnmutedEvent(muted));
   }
 }
 
