@@ -287,6 +287,11 @@ class AmpJWPlayer extends AMP.BaseElement {
     this.contentBackfill_ = element.getAttribute('data-content-backfill') || '';
     this.contentRecency_ = element.getAttribute('data-content-recency') || '';
 
+    // Allow outstream playback
+    if (this.contentid_ === 'outstream') {
+      this.contentid_ = 'oi7pAMI1';
+    }
+
     installVideoManagerForDoc(this.element);
     Services.videoManagerForDoc(this.element).register(this);
   }
@@ -446,6 +451,14 @@ class AmpJWPlayer extends AMP.BaseElement {
           this.playlistItem_ = playlistItem;
           this.sendCommand_('getPlayedRanges');
           break;
+        case 'resize':
+          const {width, height} = detail;
+          Services.mutatorForDoc(this.getAmpDoc()).forceChangeSize(
+            this.element,
+            height,
+            width
+          );
+          break;
         case 'time':
           const {currentTime} = detail;
           this.currentTime_ = currentTime;
@@ -502,11 +515,7 @@ class AmpJWPlayer extends AMP.BaseElement {
   getSingleLineEmbed_() {
     const isDev = getMode(this.win).localDev;
     const pid = encodeURIComponent(this.playerid_);
-    let cid = encodeURIComponent(this.contentid_);
-
-    if (cid === 'outstream') {
-      cid = 'oi7pAMI1';
-    }
+    const cid = encodeURIComponent(this.contentid_);
 
     let baseUrl = `https://content.jwplatform.com/players/${cid}-${pid}.html`;
 
