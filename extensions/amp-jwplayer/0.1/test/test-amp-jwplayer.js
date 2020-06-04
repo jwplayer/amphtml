@@ -424,7 +424,7 @@ describes.realWin(
       expect(placeholder).to.not.have.display('');
     });
 
-    it('supports outstream requests', () => {
+    it('supports outstream requests', async () => {
       const attributes = {
         'data-media-id': 'outstream',
         'data-player-id': 'p4gV8jF3',
@@ -433,7 +433,7 @@ describes.realWin(
       const imp = jwp.implementation_;
 
       expect(imp.contentid_).to.equal('oi7pAMI1');
-  });
+    });
 
     it('fails if no media is specified', () => {
       return allowConsoleError(() => {
