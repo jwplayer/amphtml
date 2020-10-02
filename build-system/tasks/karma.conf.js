@@ -44,6 +44,10 @@ const BABELIFY_CONFIG = {
 
 const preprocessors = ['browserify'];
 
+// 'Chrome Headless' functionality is now done in Puppeteer
+// Set Chrome binary path to puppeteer so Chrome binary doesn't need to be preinstalled
+process.env.CHROME_BIN = require('puppeteer').executablePath();
+
 /**
  * @param {!Object} config
  */
