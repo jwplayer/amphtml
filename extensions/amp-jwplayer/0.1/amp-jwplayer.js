@@ -86,6 +86,9 @@ class AmpJWPlayer extends AMP.BaseElement {
     /** @private {?function(Element)} */
     this.playerReadyResolver_ = null;
 
+    /** @private {function()} */
+    this.onSetupOnce_ = once(() => this.onSetup_());
+
     /** @private {function(Object)} */
     this.onReadyOnce_ = once((detail) => this.onReady_(detail));
 
@@ -371,6 +374,14 @@ class AmpJWPlayer extends AMP.BaseElement {
   }
 
   /**
+   * @private
+   */
+  onSetup_() {
+    this.playerReadyResolver_(this.iframe_);
+    this.sendCommand_('setupConfig', 'PLACEHOLDER_VALUE');
+  }
+
+  /**
    * @param {{playlistItem: Object, muted: boolean}} detail
    * @private
    */
@@ -378,7 +389,6 @@ class AmpJWPlayer extends AMP.BaseElement {
     const {element} = this;
 
     this.playlistItem_ = {...detail.playlistItem};
-    this.playerReadyResolver_(this.iframe_);
 
     // Inform Video Manager that the video is pre-muted from persisted options.
     if (detail.muted) {
@@ -414,6 +424,11 @@ class AmpJWPlayer extends AMP.BaseElement {
     // Log any valid events
     dev().info('JWPLAYER', 'EVENT:', event || 'anon event', detail || data);
 
+    if (event === 'setup') {
+      this.onSetupOnce_();
+      return;
+    }
+    
     if (event === 'ready') {
       detail && this.onReadyOnce_(detail);
       return;
