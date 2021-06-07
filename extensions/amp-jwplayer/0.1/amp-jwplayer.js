@@ -377,8 +377,7 @@ class AmpJWPlayer extends AMP.BaseElement {
    * @private
    */
   onSetup_() {
-    this.playerReadyResolver_(this.iframe_);
-    this.sendCommand_('setupConfig', 'PLACEHOLDER_VALUE');
+    this.postCommandMessage_('setupConfig', 'PLACEHOLDER_VALUE');
   }
 
   /**
@@ -389,6 +388,7 @@ class AmpJWPlayer extends AMP.BaseElement {
     const {element} = this;
 
     this.playlistItem_ = {...detail.playlistItem};
+    this.playerReadyResolver_(this.iframe_);
 
     // Inform Video Manager that the video is pre-muted from persisted options.
     if (detail.muted) {
@@ -499,23 +499,30 @@ class AmpJWPlayer extends AMP.BaseElement {
    * @private
    */
   sendCommand_(method, optParams) {
-    this.playerReadyPromise_.then(() => {
-      if (!this.iframe_ || !this.iframe_.contentWindow) {
-        return;
-      }
+    this.playerReadyPromise_.then(() => this.postCommandMessage_(method, optParams));
+  }
 
-      dev().info('JWPLAYER', 'COMMAND:', method, optParams);
+  /**
+   * @param {string} method
+   * @param {number|boolean|string|Object|undefined} [optParams]
+   * @private
+   */
+  postCommandMessage_(method, optParams) {
+    if (!this.iframe_ || !this.iframe_.contentWindow) {
+      return;
+    }
 
-      this.iframe_.contentWindow./*OK*/ postMessage(
-        JSON.stringify(
-          dict({
-            'method': method,
-            'optParams': optParams,
-          })
-        ),
-        '*'
-      );
-    });
+    dev().info('JWPLAYER', 'COMMAND:', method, optParams);
+
+    this.iframe_.contentWindow./*OK*/ postMessage(
+      JSON.stringify(
+        dict({
+          'method': method,
+          'optParams': optParams,
+        })
+      ),
+      '*'
+    );
   }
 
   /**

@@ -261,6 +261,12 @@ describes.realWin(
           expect(spy).calledWith(detail);
         });
 
+        it('calls onSetup if valid setup message recieved', () => {
+          const spy = env.sandbox.spy(impl, 'onSetupOnce_');
+          mockMessage('setup');
+          expect(spy.called).to.be.true;
+        });
+
         it('updates fullscreen on message', () => {
           const enterSpy = env.sandbox.spy(impl, 'fullscreenEnter');
           const exitSpy = env.sandbox.spy(impl, 'fullscreenExit');
