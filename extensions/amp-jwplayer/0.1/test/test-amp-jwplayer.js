@@ -101,6 +101,21 @@ describes.realWin(
         );
       });
 
+      it('renders with a playlist and all parameters', async () => {
+        const jw = await getjwplayer({
+          'data-playlist-id': '482jsTAr',
+          'data-player-id': 'sDZEo0ea',
+          'data-content-search': 'dog',
+          'data-content-backfill': true,
+        });
+        const iframe = jw.querySelector('iframe');
+        expect(iframe).to.not.be.null;
+        expect(iframe.tagName).to.equal('IFRAME');
+        expect(iframe.src).to.equal(
+          'https://content.jwplatform.com/players/482jsTAr-sDZEo0ea.html?search=dog&backfill=true&isAMP=true'
+        );
+      });
+      
       it('should pass data-media-querystring value to the iframe src', async () => {
         let queryString = 'name1=abc&name2=xyz&name3=123';
         let queryStringParams = queryString.split('&');
