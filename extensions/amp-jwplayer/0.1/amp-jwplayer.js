@@ -30,7 +30,11 @@ import {
 import {dev, userAssert} from '../../../src/log';
 import {dict} from '../../../src/core/types/object';
 import {disableScrollingOnIframe} from '../../../src/iframe-helper';
-import {dispatchCustomEvent, removeElement} from '../../../src/dom';
+import {
+  dispatchCustomEvent,
+  removeElement,
+  getDataParamsFromAttributes
+} from '../../../src/dom';
 import {
   fullscreenEnter,
   fullscreenExit,
@@ -41,6 +45,7 @@ import {getMode} from '../../../src/mode';
 import {installVideoManagerForDoc} from '../../../src/service/video-manager-impl';
 import {isLayoutSizeDefined} from '../../../src/layout';
 import {once} from '../../../src/core/types/function';
+import { tryParseJson } from '#core/types/object/json';
 
 const JWPLAYER_EVENTS = {
   'ready': VideoEvents.LOAD,
@@ -377,7 +382,19 @@ class AmpJWPlayer extends AMP.BaseElement {
    * @private
    */
   onSetup_() {
-    this.postCommandMessage_('setupConfig', 'PLACEHOLDER_VALUE');
+    const {element} = this;
+    const configAttributes = getDataParamsFromAttributes(element, null, /^config(.+)/);
+    const configJSON = element.getAttribute('data-config-json');
+    const config = tryParseJson(configJSON) || {};
+
+    Object.keys(configAttributes).forEach(attr => {
+      if (attr.indexOf('json') !== -1) {
+        return;
+      }
+      config[attr] = configAttributes[attr];
+    });
+
+    this.postCommandMessage_('setupConfig', config);
   }
 
   /**
