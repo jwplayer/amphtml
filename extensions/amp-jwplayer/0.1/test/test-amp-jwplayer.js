@@ -115,14 +115,14 @@ describes.realWin(
           'https://content.jwplatform.com/players/482jsTAr-sDZEo0ea.html?search=dog&backfill=true&isAMP=true'
         );
       });
-      
-      it('should pass data-media-querystring value to the iframe src', async () => {
+
+      it('should pass data-player-querystring value to the iframe src', async () => {
         let queryString = 'name1=abc&name2=xyz&name3=123';
         let queryStringParams = queryString.split('&');
         const jw = await getjwplayer({
           'data-playlist-id': '482jsTAr',
           'data-player-id': 'sDZEo0ea',
-          'data-media-querystring': queryString
+          'data-player-querystring': queryString,
         });
         const iframe = jw.querySelector('iframe');
         const params = parseUrlDeprecated(iframe.src).search.split('&');
@@ -131,12 +131,12 @@ describes.realWin(
         }
       });
 
-      it('should pass data-param-* attributes to the iframe src', async () => {
+      it('should pass data-player-param-* attributes to the iframe src', async () => {
         const jw = await getjwplayer({
           'data-playlist-id': '482jsTAr',
           'data-player-id': 'sDZEo0ea',
-          'data-param-language': 'de',
-          'data-param-custom-ad-data': 'key:value;key2:value2',
+          'data-player-param-language': 'de',
+          'data-player-param-custom-ad-data': 'key:value;key2:value2',
         });
         const iframe = jw.querySelector('iframe');
         const params = parseUrlDeprecated(iframe.src).search.split('&');

@@ -290,7 +290,7 @@ class AmpJWPlayer extends AMP.BaseElement {
     this.contentSearch_ = element.getAttribute('data-content-search') || '';
     this.contentBackfill_ = element.getAttribute('data-content-backfill') || '';
     this.contentRecency_ = element.getAttribute('data-content-recency') || '';
-    this.queryString_ = element.getAttribute('data-media-querystring') || '';
+    this.queryString_ = element.getAttribute('data-player-querystring') || '';
     
     installVideoManagerForDoc(this.element);
     Services.videoManagerForDoc(this.element).register(this);
@@ -307,7 +307,7 @@ class AmpJWPlayer extends AMP.BaseElement {
 
     const url = this.getSingleLineEmbed_();
     let src = addParamsToUrl(url, queryParams);
-    src = addParamsToUrl(src, getDataParamsFromAttributes(this.element))
+    src = addParamsToUrl(src, getDataParamsFromAttributes(this.element, null, /^playerParam(.+)/));
     
     if (this.queryString_ && typeof this.queryString_ === 'string') {
       src += `&${this.queryString_}`;
