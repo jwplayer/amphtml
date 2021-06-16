@@ -309,7 +309,7 @@ class AmpJWPlayer extends AMP.BaseElement {
     let src = addParamsToUrl(url, queryParams);
     src = addParamsToUrl(src, getDataParamsFromAttributes(this.element, null, /^playerParam(.+)/));
     
-    if (this.queryString_ && typeof this.queryString_ === 'string') {
+    if (this.queryString_) {
       src += `&${this.queryString_}`;
     }
 
