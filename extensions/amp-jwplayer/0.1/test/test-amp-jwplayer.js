@@ -352,6 +352,81 @@ describes.realWin(
       });
     });
 
+    describe('setup', () => {
+      it('sends command with skin url', async () => {
+        const skinUrl = 'http://foo.bar.css';
+        const config = {skinUrl};
+
+        const jwp = await getjwplayer({
+          'data-media-id': 'BZ6tc0gy',
+          'data-player-id': 'uoIbMPm3',
+          'data-config-skin-url': skinUrl,
+        });
+        const impl = await jwp.getImpl(false);
+        const spy = env.sandbox.stub(impl, 'postCommandMessage_');
+
+        impl.onSetup_();
+        expect(spy).calledWith('setupConfig', config);
+      });
+
+      it('sends command with plugin url', async () => {
+        const pluginUrl = 'http://foo.bar.js';
+        const config = {pluginUrl};
+
+        const jwp = await getjwplayer({
+          'data-media-id': 'BZ6tc0gy',
+          'data-player-id': 'uoIbMPm3',
+          'data-config-plugin-url': pluginUrl,
+        });
+        const impl = await jwp.getImpl(false);
+        const spy = env.sandbox.stub(impl, 'postCommandMessage_');
+
+        impl.onSetup_();
+        expect(spy).calledWith('setupConfig', config);
+      });
+
+      it('sends command with json object', async () => {
+        const config = {
+          playbackRateControls: true,
+          displaytitle: false,
+        };
+
+        const jwp = await getjwplayer({
+          'data-media-id': 'BZ6tc0gy',
+          'data-player-id': 'uoIbMPm3',
+          'data-config-json':
+            '{"playbackRateControls":true,"displaytitle":false}',
+        });
+        const impl = await jwp.getImpl(false);
+        const spy = env.sandbox.stub(impl, 'postCommandMessage_');
+
+        impl.onSetup_();
+        expect(spy).calledWith('setupConfig', config);
+      });
+
+      it('sends command with json object and skin url', async () => {
+        const skinUrl = 'http://foo.bar.css';
+        const config = {
+          playbackRateControls: true,
+          displaytitle: false,
+          skinUrl,
+        };
+
+        const jwp = await getjwplayer({
+          'data-media-id': 'BZ6tc0gy',
+          'data-player-id': 'uoIbMPm3',
+          'data-config-skin-url': skinUrl,
+          'data-config-json':
+            '{"playbackRateControls":true,"displaytitle":false}',
+        });
+        const impl = await jwp.getImpl(false);
+        const spy = env.sandbox.stub(impl, 'postCommandMessage_');
+
+        impl.onSetup_();
+        expect(spy).calledWith('setupConfig', config);
+      });
+    });
+
     describe('createPlaceholderCallback', () => {
       it('should create a placeholder image', async () => {
         const jw = await getjwplayer({

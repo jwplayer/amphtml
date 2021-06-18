@@ -32,8 +32,8 @@ import {dict} from '../../../src/core/types/object';
 import {disableScrollingOnIframe} from '../../../src/iframe-helper';
 import {
   dispatchCustomEvent,
+  getDataParamsFromAttributes,
   removeElement,
-  getDataParamsFromAttributes
 } from '../../../src/dom';
 import {
   fullscreenEnter,
@@ -45,7 +45,7 @@ import {getMode} from '../../../src/mode';
 import {installVideoManagerForDoc} from '../../../src/service/video-manager-impl';
 import {isLayoutSizeDefined} from '../../../src/layout';
 import {once} from '../../../src/core/types/function';
-import { tryParseJson } from '../../../src/core/types/object/json';
+import {tryParseJson} from '../../../src/core/types/object/json';
 
 const JWPLAYER_EVENTS = {
   'ready': VideoEvents.LOAD,
@@ -383,11 +383,15 @@ class AmpJWPlayer extends AMP.BaseElement {
    */
   onSetup_() {
     const {element} = this;
-    const configAttributes = getDataParamsFromAttributes(element, null, /^config(.+)/);
+    const configAttributes = getDataParamsFromAttributes(
+      element,
+      null,
+      /^config(.+)/
+    );
     const configJSON = element.getAttribute('data-config-json');
     const config = tryParseJson(configJSON) || {};
 
-    Object.keys(configAttributes).forEach(attr => {
+    Object.keys(configAttributes).forEach((attr) => {
       if (attr.indexOf('json') !== -1) {
         return;
       }
@@ -445,7 +449,7 @@ class AmpJWPlayer extends AMP.BaseElement {
       this.onSetupOnce_();
       return;
     }
-    
+
     if (event === 'ready') {
       detail && this.onReadyOnce_(detail);
       return;
@@ -516,7 +520,9 @@ class AmpJWPlayer extends AMP.BaseElement {
    * @private
    */
   sendCommand_(method, optParams) {
-    this.playerReadyPromise_.then(() => this.postCommandMessage_(method, optParams));
+    this.playerReadyPromise_.then(() =>
+      this.postCommandMessage_(method, optParams)
+    );
   }
 
   /**

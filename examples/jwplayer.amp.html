@@ -75,6 +75,69 @@
   >
   </amp-jwplayer>
 
+  <h3>Custom Skin</h3>
+  <amp-jwplayer
+    data-media-id="CtaIzmFs"
+    data-player-id="BjcwyK37"
+    width="640"
+    height="360"
+    data-config-skin-url="https://playertest.longtailvideo.com/skins/ethan.css"
+  >
+  </amp-jwplayer>
+
+  <h3>Custom Plugin</h3>
+  <amp-jwplayer
+    data-media-id="CtaIzmFs"
+    data-player-id="BjcwyK37"
+    width="640"
+    height="360"
+    data-config-plugin-url="https://playertest.longtailvideo.com/plugins/newsticker.js"
+  >
+  </amp-jwplayer>
+
+  <h3>Custom JSON Ad Config</h3>
+  <amp-jwplayer
+    data-media-id="BZ6tc0gy"
+    data-player-id="uoIbMPm3"
+    layout="responsive"
+    width="16"
+    height="9"
+    data-config-json='{
+      "advertising": {
+        "client": "vast",
+        "schedule": [
+          {
+              "tag": "http://playertest.longtailvideo.com/pre.xml",
+              "offset": "pre"
+          },
+          {
+              "tag": "http://playertest.longtailvideo.com/mid.xml",
+              "offset": "5"
+          },
+          {
+              "tag": "http://playertest.longtailvideo.com/post.xml",
+              "offset": "post"
+          }
+        ]
+      }
+    }'
+  >
+  </amp-jwplayer>
+
+  <h3>Custom JSON Config</h3>
+  <amp-jwplayer
+    data-media-id="CtaIzmFs"
+    data-player-id="BjcwyK37"
+    layout="responsive"
+    width="16"
+    height="9"
+    data-config-json='{
+      "playbackRateControls": true,
+      "displaytitle": false,
+      "horizontalVolumeSlider": true
+    }'
+  >
+  </amp-jwplayer>
 
   <h3>External Controls</h3>
   <amp-jwplayer
