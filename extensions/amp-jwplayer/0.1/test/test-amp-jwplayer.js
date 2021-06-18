@@ -355,8 +355,6 @@ describes.realWin(
     describe('setup', () => {
       it('sends command with skin url', async () => {
         const skinUrl = 'http://foo.bar.css';
-        const config = {skinUrl};
-
         const jwp = await getjwplayer({
           'data-media-id': 'BZ6tc0gy',
           'data-player-id': 'uoIbMPm3',
@@ -366,12 +364,12 @@ describes.realWin(
         const spy = env.sandbox.stub(impl, 'postCommandMessage_');
 
         impl.onSetup_();
+        const config = {skinUrl};
         expect(spy).calledWith('setupConfig', config);
       });
 
       it('sends command with plugin url', async () => {
         const pluginUrl = 'http://foo.bar.js';
-        const config = {pluginUrl};
 
         const jwp = await getjwplayer({
           'data-media-id': 'BZ6tc0gy',
@@ -382,15 +380,11 @@ describes.realWin(
         const spy = env.sandbox.stub(impl, 'postCommandMessage_');
 
         impl.onSetup_();
+        const config = {pluginUrl};
         expect(spy).calledWith('setupConfig', config);
       });
 
       it('sends command with json object', async () => {
-        const config = {
-          playbackRateControls: true,
-          displaytitle: false,
-        };
-
         const jwp = await getjwplayer({
           'data-media-id': 'BZ6tc0gy',
           'data-player-id': 'uoIbMPm3',
@@ -401,17 +395,15 @@ describes.realWin(
         const spy = env.sandbox.stub(impl, 'postCommandMessage_');
 
         impl.onSetup_();
+        const config = {
+          playbackRateControls: true,
+          displaytitle: false,
+        };
         expect(spy).calledWith('setupConfig', config);
       });
 
       it('sends command with json object and skin url', async () => {
         const skinUrl = 'http://foo.bar.css';
-        const config = {
-          playbackRateControls: true,
-          displaytitle: false,
-          skinUrl,
-        };
-
         const jwp = await getjwplayer({
           'data-media-id': 'BZ6tc0gy',
           'data-player-id': 'uoIbMPm3',
@@ -423,6 +415,11 @@ describes.realWin(
         const spy = env.sandbox.stub(impl, 'postCommandMessage_');
 
         impl.onSetup_();
+        const config = {
+          playbackRateControls: true,
+          displaytitle: false,
+          skinUrl,
+        };
         expect(spy).calledWith('setupConfig', config);
       });
     });
