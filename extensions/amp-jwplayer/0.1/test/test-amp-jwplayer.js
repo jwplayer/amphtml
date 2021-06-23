@@ -422,6 +422,25 @@ describes.realWin(
         };
         expect(spy).calledWith('setupConfig', config);
       });
+
+      it('sends command with json object containing custom params', async () => {
+        const jwp = await getjwplayer({
+          'data-media-id': 'BZ6tc0gy',
+          'data-player-id': 'uoIbMPm3',
+          'data-ad-cust-params': '{"key1": "value1","keyTest": "value2"}',
+        });
+        const impl = await jwp.getImpl(false);
+        const spy = env.sandbox.stub(impl, 'postCommandMessage_');
+
+        impl.onSetup_();
+        const config = {
+          adCustParams: {
+            key1: 'value1',
+            keyTest: 'value2',
+          },
+        };
+        expect(spy).calledWith('setupConfig', config);
+      });
     });
 
     describe('createPlaceholderCallback', () => {
