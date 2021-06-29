@@ -398,6 +398,11 @@ class AmpJWPlayer extends AMP.BaseElement {
       config[attr] = configAttributes[attr];
     });
 
+    const adCustParamsJSON = element.getAttribute('data-ad-cust-params');
+    if (adCustParamsJSON) {
+      config.adCustParams = tryParseJson(adCustParamsJSON);
+    }
+
     this.postCommandMessage_('setupConfig', config);
   }
 
