@@ -162,6 +162,29 @@
   >
   </amp-jwplayer>
 
+  <h3>Custom VAST Ad Macros</h3>
+  <amp-jwplayer
+    data-media-id="CtaIzmFs"
+    data-player-id="BjcwyK37"
+    layout="responsive"
+    width="16"
+    height="9"
+    data-ad-macro-item-test='val'
+    data-ad-macro-item-param-list='one,two,three'
+    data-config-json='{
+      "advertising": {
+        "client": "vast",
+        "schedule": [
+          {
+              "tag": "http://playertest.longtailvideo.com/pre.xml?domain=__domain__&test=__item-test__&param=__item-param-list__",
+              "offset": "pre"
+          }
+        ]
+      }
+    }'
+  >
+  </amp-jwplayer>
+
   <h3>External Controls</h3>
   <amp-jwplayer
     id="myVideo"

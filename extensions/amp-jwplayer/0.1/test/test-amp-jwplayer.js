@@ -15,6 +15,7 @@
  */
 
 import '../amp-jwplayer';
+import * as consent from '../../../../src/consent';
 import * as fullscreen from '../../../../src/core/dom/fullscreen';
 import {VideoEvents} from '../../../../src/video-interface';
 import {htmlFor} from '../../../../src/static-template';
@@ -441,6 +442,26 @@ describes.realWin(
         };
         expect(spy).calledWith('setupConfig', config);
       });
+
+      it('sends command with json object containing ad macros', async () => {
+        const jwp = await getjwplayer({
+          'data-media-id': 'BZ6tc0gy',
+          'data-player-id': 'uoIbMPm3',
+          'data-ad-macro-test': 'value1',
+          'data-ad-macro-item-param': 'value2',
+        });
+        const impl = await jwp.getImpl(false);
+        const spy = env.sandbox.stub(impl, 'postCommandMessage_');
+
+        impl.onSetup_();
+        const config = {
+          adMacros: {
+            test: 'value1',
+            itemParam: 'value2',
+          },
+        };
+        expect(spy).calledWith('setupConfig', config);
+      });
     });
 
     describe('createPlaceholderCallback', () => {
@@ -554,6 +575,24 @@ describes.realWin(
         expect(iframe.src).to.equal(
           'https://content.jwplatform.com/players/zzz-sDZEo0ea.html?isAMP=true'
         );
+      });
+    });
+
+    it('adds consent data to iframe src', () => {
+      env.sandbox.stub(consent, 'getConsentPolicyInfo').resolves('test');
+      env.sandbox
+        .stub(consent, 'getConsentMetadata')
+        .resolves({gdprApplies: true, key: 2});
+
+      return getjwplayer({
+        'data-media-id': 'Wferorsv',
+        'data-player-id': 'sDZEo0ea',
+        'data-block-on-consent': '_till_accepted',
+      }).then((jw) => {
+        const iframe = jw.querySelector('iframe');
+
+        expect(iframe.src).to.contain('consentValue=test');
+        expect(iframe.src).to.contain('consentGdpr=true');
       });
     });
   }

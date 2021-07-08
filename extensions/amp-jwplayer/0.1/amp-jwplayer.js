@@ -40,6 +40,11 @@ import {
   fullscreenExit,
   isFullscreenElement,
 } from '../../../src/core/dom/fullscreen';
+import {
+  getConsentMetadata,
+  getConsentPolicyInfo,
+  getConsentPolicyState,
+} from '../../../src/consent';
 import {getData, listen} from '../../../src/event-helper';
 import {getMode} from '../../../src/mode';
 import {installVideoManagerForDoc} from '../../../src/service/video-manager-impl';
@@ -120,6 +125,15 @@ class AmpJWPlayer extends AMP.BaseElement {
 
     /** @private @const */
     this.pauseHelper_ = new PauseHelper(this.element);
+
+    /**@private {?number} */
+    this.consentState_ = null;
+
+    /**@private {?string} */
+    this.consentString_ = null;
+
+    /**@private {?object} */
+    this.consentMetadata_ = null;
   }
 
   /** @override */
@@ -305,31 +319,38 @@ class AmpJWPlayer extends AMP.BaseElement {
 
   /** @override */
   layoutCallback() {
-    const queryParams = dict({
-      'search': this.getContextualVal_() || undefined,
-      'recency': this.contentRecency_ || undefined,
-      'backfill': this.contentBackfill_ || undefined,
-      'isAMP': true,
+    return this.getConsentData_().then(() => {
+      const queryParams = dict({
+        'search': this.getContextualVal_() || undefined,
+        'recency': this.contentRecency_ || undefined,
+        'backfill': this.contentBackfill_ || undefined,
+        'isAMP': true,
+        'consentState': this.consentState_ || undefined,
+        'consentValue': this.consentString_ || undefined,
+        'consentGdpr': this.consentMetadata_
+          ? this.consentMetadata_.gdprApplies
+          : undefined,
+      });
+
+      const url = this.getSingleLineEmbed_();
+      const src = addParamsToUrl(url, queryParams);
+      const frame = disableScrollingOnIframe(
+        createFrameFor(this, src, this.element.id)
+      );
+
+      addUnsafeAllowAutoplay(frame);
+      disableScrollingOnIframe(frame);
+      // Subscribe to messages from player
+      this.unlistenFrame_ = listen(this.win, 'message', this.onMessage_);
+      // Forward fullscreen changes to player to update ui
+      this.unlistenFullscreen_ = listen(frame, 'fullscreenchange', () => {
+        const isFullscreen = this.isFullscreen();
+        this.sendCommand_('setFullscreen', isFullscreen);
+      });
+      this.iframe_ = /** @type {HTMLIFrameElement} */ (frame);
+
+      return this.loadPromise(this.iframe_);
     });
-
-    const url = this.getSingleLineEmbed_();
-    const src = addParamsToUrl(url, queryParams);
-    const frame = disableScrollingOnIframe(
-      createFrameFor(this, src, this.element.id)
-    );
-
-    addUnsafeAllowAutoplay(frame);
-    disableScrollingOnIframe(frame);
-    // Subscribe to messages from player
-    this.unlistenFrame_ = listen(this.win, 'message', this.onMessage_);
-    // Forward fullscreen changes to player to update ui
-    this.unlistenFullscreen_ = listen(frame, 'fullscreenchange', () => {
-      const isFullscreen = this.isFullscreen();
-      this.sendCommand_('setFullscreen', isFullscreen);
-    });
-    this.iframe_ = /** @type {HTMLIFrameElement} */ (frame);
-
-    return this.loadPromise(this.iframe_);
   }
 
   /** @override */
@@ -398,9 +419,16 @@ class AmpJWPlayer extends AMP.BaseElement {
       config[attr] = configAttributes[attr];
     });
 
+    // Add custom ad params to config
     const adCustParamsJSON = element.getAttribute('data-ad-cust-params');
     if (adCustParamsJSON) {
       config.adCustParams = tryParseJson(adCustParamsJSON);
+    }
+
+    // Add custom ad macros to config
+    const adMacros = getDataParamsFromAttributes(element, null, /^adMacro(.+)/);
+    if (Object.keys(adMacros).length !== 0) {
+      config.adMacros = adMacros;
     }
 
     this.postCommandMessage_('setupConfig', config);
@@ -604,6 +632,33 @@ class AmpJWPlayer extends AMP.BaseElement {
       return ogTitle || title || '';
     }
     return this.contentSearch_;
+  }
+
+  /**
+   * @private
+   * @return {Promise}
+   */
+  getConsentData_() {
+    const consentPolicy = super.getConsentPolicy();
+    const consentStatePromise = consentPolicy
+      ? getConsentPolicyState(this.element, consentPolicy)
+      : Promise.resolve(null);
+    const consentStringPromise = consentPolicy
+      ? getConsentPolicyInfo(this.element, consentPolicy)
+      : Promise.resolve(null);
+    const consentMetadataPromise = consentPolicy
+      ? getConsentMetadata(this.element, consentPolicy)
+      : Promise.resolve(null);
+
+    return Promise.all([
+      consentStatePromise,
+      consentStringPromise,
+      consentMetadataPromise,
+    ]).then((consents) => {
+      this.consentState_ = consents[0];
+      this.consentString_ = consents[1];
+      this.consentMetadata_ = consents[2];
+    });
   }
 }
 
