@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import {Deferred} from '../../../src/core/data-structures/promise';
-import {PauseHelper} from '../../../src/utils/pause-helper';
-import {Services} from '../../../src/services';
+import {Deferred} from '#core/data-structures/promise';
+import {PauseHelper} from '#core/dom/video/pause-helper';
+import {Services} from '#service';
 import {VideoEvents} from '../../../src/video-interface';
 import {addParamsToUrl} from '../../../src/url';
 import {
@@ -27,19 +27,20 @@ import {
   objOrParseJson,
   redispatch,
 } from '../../../src/iframe-video';
+import {applyFillContent, isLayoutSizeDefined} from '#core/dom/layout';
 import {dev, userAssert} from '../../../src/log';
-import {dict} from '../../../src/core/types/object';
+import {dict} from '#core/types/object';
 import {disableScrollingOnIframe} from '../../../src/iframe-helper';
 import {
   dispatchCustomEvent,
   getDataParamsFromAttributes,
   removeElement,
-} from '../../../src/dom';
+} from '#core/dom';
 import {
   fullscreenEnter,
   fullscreenExit,
   isFullscreenElement,
-} from '../../../src/core/dom/fullscreen';
+} from '#core/dom/fullscreen';
 import {
   getConsentMetadata,
   getConsentPolicyInfo,
@@ -47,10 +48,11 @@ import {
 } from '../../../src/consent';
 import {getData, listen} from '../../../src/event-helper';
 import {getMode} from '../../../src/mode';
-import {installVideoManagerForDoc} from '../../../src/service/video-manager-impl';
+import {installVideoManagerForDoc} from '#service/video-manager-impl';
 import {isLayoutSizeDefined} from '../../../src/layout';
-import {once} from '../../../src/core/types/function';
-import {tryParseJson} from '../../../src/core/types/object/json';
+import {once} from '#core/types/function';
+import {tryParseJson} from '#core/types/object/json';
+import {propagateAttributes} from '#core/dom/propagate-attributes';
 
 const JWPLAYER_EVENTS = {
   'ready': VideoEvents.LOAD,
@@ -384,8 +386,8 @@ class AmpJWPlayer extends AMP.BaseElement {
       return;
     }
     const placeholder = this.win.document.createElement('img');
-    this.propagateAttributes(['aria-label'], placeholder);
-    this.applyFillContent(placeholder);
+    propagateAttributes(['aria-label'], this.element, placeholder);
+    applyFillContent(placeholder);
     placeholder.setAttribute('placeholder', '');
     placeholder.setAttribute('referrerpolicy', 'origin');
     if (placeholder.hasAttribute('aria-label')) {
