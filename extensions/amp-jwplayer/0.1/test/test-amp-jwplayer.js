@@ -118,8 +118,8 @@ describes.realWin(
       });
 
       it('should pass data-player-querystring value to the iframe src', async () => {
-        let queryString = 'name1=abc&name2=xyz&name3=123';
-        let queryStringParams = queryString.split('&');
+        const queryString = 'name1=abc&name2=xyz&name3=123';
+        const queryStringParams = queryString.split('&');
         const jw = await getjwplayer({
           'data-playlist-id': '482jsTAr',
           'data-player-id': 'sDZEo0ea',
