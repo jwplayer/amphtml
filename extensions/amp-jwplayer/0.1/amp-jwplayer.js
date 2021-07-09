@@ -30,17 +30,27 @@ import {
 import {dev, userAssert} from '../../../src/log';
 import {dict} from '../../../src/core/types/object';
 import {disableScrollingOnIframe} from '../../../src/iframe-helper';
-import {dispatchCustomEvent, removeElement} from '../../../src/dom';
+import {
+  dispatchCustomEvent,
+  getDataParamsFromAttributes,
+  removeElement,
+} from '../../../src/dom';
 import {
   fullscreenEnter,
   fullscreenExit,
   isFullscreenElement,
 } from '../../../src/core/dom/fullscreen';
+import {
+  getConsentMetadata,
+  getConsentPolicyInfo,
+  getConsentPolicyState,
+} from '../../../src/consent';
 import {getData, listen} from '../../../src/event-helper';
 import {getMode} from '../../../src/mode';
 import {installVideoManagerForDoc} from '../../../src/service/video-manager-impl';
 import {isLayoutSizeDefined} from '../../../src/layout';
 import {once} from '../../../src/core/types/function';
+import {tryParseJson} from '../../../src/core/types/object/json';
 
 const JWPLAYER_EVENTS = {
   'ready': VideoEvents.LOAD,
@@ -50,8 +60,6 @@ const JWPLAYER_EVENTS = {
   'visible': VideoEvents.VISIBILITY,
   'adImpression': VideoEvents.AD_START,
   'adComplete': VideoEvents.AD_END,
-  'adPlay': VideoEvents.PLAYING,
-  'adPause': VideoEvents.PAUSE,
 };
 
 /**
@@ -86,6 +94,9 @@ class AmpJWPlayer extends AMP.BaseElement {
     /** @private {?function(Element)} */
     this.playerReadyResolver_ = null;
 
+    /** @private {function()} */
+    this.onSetupOnce_ = once(() => this.onSetup_());
+
     /** @private {function(Object)} */
     this.onReadyOnce_ = once((detail) => this.onReady_(detail));
 
@@ -112,6 +123,15 @@ class AmpJWPlayer extends AMP.BaseElement {
 
     /** @private @const */
     this.pauseHelper_ = new PauseHelper(this.element);
+
+    /**@private {?number} */
+    this.consentState_ = null;
+
+    /**@private {?string} */
+    this.consentString_ = null;
+
+    /**@private {?object} */
+    this.consentMetadata_ = null;
   }
 
   /** @override */
@@ -290,6 +310,7 @@ class AmpJWPlayer extends AMP.BaseElement {
     this.contentSearch_ = element.getAttribute('data-content-search') || '';
     this.contentBackfill_ = element.getAttribute('data-content-backfill') || '';
     this.contentRecency_ = element.getAttribute('data-content-recency') || '';
+    this.queryString_ = element.getAttribute('data-player-querystring') || '';
 
     installVideoManagerForDoc(this.element);
     Services.videoManagerForDoc(this.element).register(this);
@@ -297,31 +318,46 @@ class AmpJWPlayer extends AMP.BaseElement {
 
   /** @override */
   layoutCallback() {
-    const queryParams = dict({
-      'search': this.getContextualVal_() || undefined,
-      'recency': this.contentRecency_ || undefined,
-      'backfill': this.contentBackfill_ || undefined,
-      'isAMP': true,
+    return this.getConsentData_().then(() => {
+      const queryParams = dict({
+        'search': this.getContextualVal_() || undefined,
+        'recency': this.contentRecency_ || undefined,
+        'backfill': this.contentBackfill_ || undefined,
+        'isAMP': true,
+        'consentState': this.consentState_ || undefined,
+        'consentValue': this.consentString_ || undefined,
+        'consentGdpr': this.consentMetadata_
+          ? this.consentMetadata_.gdprApplies
+          : undefined,
+      });
+
+      const url = this.getSingleLineEmbed_();
+      let src = addParamsToUrl(url, queryParams);
+      src = addParamsToUrl(
+        src,
+        getDataParamsFromAttributes(this.element, null, /^playerParam(.+)/)
+      );
+      if (this.queryString_) {
+        src += `&${this.queryString_}`;
+      }
+
+      const frame = disableScrollingOnIframe(
+        createFrameFor(this, src, this.element.id)
+      );
+
+      addUnsafeAllowAutoplay(frame);
+      disableScrollingOnIframe(frame);
+      // Subscribe to messages from player
+      this.unlistenFrame_ = listen(this.win, 'message', this.onMessage_);
+      // Forward fullscreen changes to player to update ui
+      this.unlistenFullscreen_ = listen(frame, 'fullscreenchange', () => {
+        const isFullscreen = this.isFullscreen();
+        this.sendCommand_('setFullscreen', isFullscreen);
+      });
+      this.iframe_ = /** @type {HTMLIFrameElement} */ (frame);
+
+      return this.loadPromise(this.iframe_);
     });
-
-    const url = this.getSingleLineEmbed_();
-    const src = addParamsToUrl(url, queryParams);
-    const frame = disableScrollingOnIframe(
-      createFrameFor(this, src, this.element.id)
-    );
-
-    addUnsafeAllowAutoplay(frame);
-    disableScrollingOnIframe(frame);
-    // Subscribe to messages from player
-    this.unlistenFrame_ = listen(this.win, 'message', this.onMessage_);
-    // Forward fullscreen changes to player to update ui
-    this.unlistenFullscreen_ = listen(frame, 'fullscreenchange', () => {
-      const isFullscreen = this.isFullscreen();
-      this.sendCommand_('setFullscreen', isFullscreen);
-    });
-    this.iframe_ = /** @type {HTMLIFrameElement} */ (frame);
-
-    return this.loadPromise(this.iframe_);
   }
 
   /** @override */
@@ -371,6 +407,41 @@ class AmpJWPlayer extends AMP.BaseElement {
   }
 
   /**
+   * @private
+   */
+  onSetup_() {
+    const {element} = this;
+    const configAttributes = getDataParamsFromAttributes(
+      element,
+      null,
+      /^config(.+)/
+    );
+    const configJSON = element.getAttribute('data-config-json');
+    const config = tryParseJson(configJSON) || {};
+
+    Object.keys(configAttributes).forEach((attr) => {
+      if (attr.indexOf('json') !== -1) {
+        return;
+      }
+      config[attr] = configAttributes[attr];
+    });
+
+    // Add custom ad params to config
+    const adCustParamsJSON = element.getAttribute('data-ad-cust-params');
+    if (adCustParamsJSON) {
+      config.adCustParams = tryParseJson(adCustParamsJSON);
+    }
+
+    // Add custom ad macros to config
+    const adMacros = getDataParamsFromAttributes(element, null, /^adMacro(.+)/);
+    if (Object.keys(adMacros).length !== 0) {
+      config.adMacros = adMacros;
+    }
+
+    this.postCommandMessage_('setupConfig', config);
+  }
+
+  /**
    * @param {{playlistItem: Object, muted: boolean}} detail
    * @private
    */
@@ -413,6 +484,11 @@ class AmpJWPlayer extends AMP.BaseElement {
 
     // Log any valid events
     dev().info('JWPLAYER', 'EVENT:', event || 'anon event', detail || data);
+
+    if (event === 'setup') {
+      this.onSetupOnce_();
+      return;
+    }
 
     if (event === 'ready') {
       detail && this.onReadyOnce_(detail);
@@ -484,23 +560,32 @@ class AmpJWPlayer extends AMP.BaseElement {
    * @private
    */
   sendCommand_(method, optParams) {
-    this.playerReadyPromise_.then(() => {
-      if (!this.iframe_ || !this.iframe_.contentWindow) {
-        return;
-      }
+    this.playerReadyPromise_.then(() =>
+      this.postCommandMessage_(method, optParams)
+    );
+  }
 
-      dev().info('JWPLAYER', 'COMMAND:', method, optParams);
+  /**
+   * @param {string} method
+   * @param {number|boolean|string|Object|undefined} [optParams]
+   * @private
+   */
+  postCommandMessage_(method, optParams) {
+    if (!this.iframe_ || !this.iframe_.contentWindow) {
+      return;
+    }
 
-      this.iframe_.contentWindow./*OK*/ postMessage(
-        JSON.stringify(
-          dict({
-            'method': method,
-            'optParams': optParams,
-          })
-        ),
-        '*'
-      );
-    });
+    dev().info('JWPLAYER', 'COMMAND:', method, optParams);
+
+    this.iframe_.contentWindow./*OK*/ postMessage(
+      JSON.stringify(
+        dict({
+          'method': method,
+          'optParams': optParams,
+        })
+      ),
+      '*'
+    );
   }
 
   /**
@@ -554,6 +639,33 @@ class AmpJWPlayer extends AMP.BaseElement {
       return ogTitle || title || '';
     }
     return this.contentSearch_;
+  }
+
+  /**
+   * @private
+   * @return {Promise}
+   */
+  getConsentData_() {
+    const consentPolicy = super.getConsentPolicy();
+    const consentStatePromise = consentPolicy
+      ? getConsentPolicyState(this.element, consentPolicy)
+      : Promise.resolve(null);
+    const consentStringPromise = consentPolicy
+      ? getConsentPolicyInfo(this.element, consentPolicy)
+      : Promise.resolve(null);
+    const consentMetadataPromise = consentPolicy
+      ? getConsentMetadata(this.element, consentPolicy)
+      : Promise.resolve(null);
+
+    return Promise.all([
+      consentStatePromise,
+      consentStringPromise,
+      consentMetadataPromise,
+    ]).then((consents) => {
+      this.consentState_ = consents[0];
+      this.consentString_ = consents[1];
+      this.consentMetadata_ = consents[2];
+    });
   }
 }
 
